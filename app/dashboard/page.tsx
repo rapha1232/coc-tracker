@@ -12,7 +12,7 @@ import { useEffect, useState } from "react";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const { data: session, status } = useSession({
+  const { status } = useSession({
     required: true,
     onUnauthenticated() {
       router.push("/login");
@@ -90,7 +90,7 @@ export default function DashboardPage() {
             <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
               <div>
                 <h1 className="text-3xl font-bold text-purple-300">
-                  {userData.name}'s Village
+                  {userData.name}&apos;s Village
                 </h1>
                 <h4 className="text-purple-400">
                   {userData.tag}

@@ -1,8 +1,8 @@
 import { TH13_BUILDINGS } from "@/constants/buildings";
 import { prisma } from "@/lib/prisma";
+import { authOptions } from "@/utils/authOptions";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
-import { authOptions } from "../auth/[...nextauth]/route";
 
 interface BuildingLevel {
   level: number;

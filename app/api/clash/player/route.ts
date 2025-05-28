@@ -1,7 +1,7 @@
 import { prisma } from "@/lib/prisma";
+import { authOptions } from "@/utils/authOptions";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
-import { authOptions } from "../../auth/[...nextauth]/route";
 
 const COC_API_TOKEN = process.env.TOKEN;
 const COC_API_URL = "https://cocproxy.royaleapi.dev/v1";

@@ -2,8 +2,6 @@ import { heroEquipmentPerHero } from "@/constants";
 import { Main, Village } from "@/types";
 import { EquipmentCard } from "./UnitCard";
 
-type HeroName = keyof typeof heroEquipmentPerHero;
-
 const EquipmentTab = ({ playerData }: { playerData: Main }) => {
   // Create a Set of unlocked equipment names for quick lookup
   const unlockedEquipment = new Set(

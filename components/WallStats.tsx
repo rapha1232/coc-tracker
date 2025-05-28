@@ -10,7 +10,6 @@ interface ExtendedBuilding extends Building {
 
 const WallStats = ({
   buildings,
-  playerData,
 }: {
   buildings: Building[];
   playerData: Main;
