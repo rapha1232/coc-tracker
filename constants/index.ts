@@ -1,0 +1,68 @@
+export const superTroops = [
+  "Super Barbarian",
+  "Super Archer",
+  "Super Giant",
+  "Sneaky Goblin",
+  "Super Wall Breaker",
+  "Rocket Balloon",
+  "Super Wizard",
+  "Super Valkyrie",
+  "Super Witch",
+  "Super Dragon",
+  "Super Minion",
+  "Inferno Dragon",
+  "Ice Hound",
+  "Super Miner",
+  "Super Hog Rider",
+  "Super Yeti",
+  "Super Bowler",
+];
+
+export const siegeMachines = [
+  "Wall Wrecker",
+  "Battle Blimp",
+  "Stone Slammer",
+  "Siege Barracks",
+  "Log Launcher",
+  "Flame Flinger",
+  "Battle Drill",
+  "Troop Launcher",
+];
+
+export const heroEquipmentPerHero = {
+  BarbarianKing: [
+    "Barbarian Puppet",
+    "Rage Vial",
+    "Earthquake Boots",
+    "Vampstache",
+    "Giant Gauntlet",
+    "Spiky Ball",
+    "Snake Bracelet",
+  ],
+  ArcherQueen: [
+    "Archer Puppet",
+    "Invisibility Vial",
+    "Giant Arrow",
+    "Healer Puppet",
+    "Frozen Arrow",
+    "Magic Mirror",
+    "Action Figure",
+  ],
+  GrandWarden: [
+    "Eternal Tome",
+    "Life Gem",
+    "Rage Gem",
+    "Healing Tome",
+    "Fireball",
+    "Lavaloon Puppet",
+  ],
+  RoyalChampion: [
+    "Royal Gem",
+    "Seeking Shield",
+    "Hog Rider Puppet",
+    "Haste Vial",
+    "Rocket Spear",
+    "Electro Boots",
+  ],
+  MinionPrince: ["Henchmen Puppet", "Dark Orb", "Metal Pants", "Noble Iron"],
+};
