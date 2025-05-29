@@ -55,7 +55,7 @@ const WallStats = ({
                 <div className="flex items-center gap-4">
                   <div className="relative w-16 h-16 flex items-center justify-center bg-gradient-to-br from-gray-700/50 to-gray-800/50 rounded-lg overflow-hidden shadow-lg">
                     <Image
-                      src={`/images/Walls/${wall.name}/${wall.name}_${wall.level}.png`}
+                      src={`/images/walls/Wall/Wall_${wall.level}.png`}
                       alt={`${wall.name} Level ${wall.level}`}
                       width={48}
                       height={48}
