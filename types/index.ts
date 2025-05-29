@@ -23,10 +23,10 @@ export interface Main {
   achievements: Achievement[];
   playerHouse: PlayerHouse;
   labels: Label[];
-  troops: HeroEquipment[];
-  heroes: HeroEquipment[];
+  troops: Troop[];
+  heroes: Hero[];
   heroEquipment: HeroEquipment[];
-  spells: HeroEquipment[];
+  spells: Spell[];
 }
 
 export interface Achievement {
@@ -70,6 +70,27 @@ export interface HeroEquipment {
   village: Village;
   equipment?: HeroEquipment[];
   superTroopIsActive?: boolean;
+}
+
+export interface Troop {
+  name: string;
+  level: number;
+  maxLevel: number;
+  village: Village;
+  superTroopIsActive?: boolean;
+}
+export interface Spell {
+  name: string;
+  level: number;
+  maxLevel: number;
+  village: Village;
+}
+export interface Hero {
+  name: string;
+  level: number;
+  maxLevel: number;
+  village: Village;
+  equipment?: HeroEquipment[];
 }
 
 export interface Label {

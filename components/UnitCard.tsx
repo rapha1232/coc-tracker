@@ -1,33 +1,12 @@
 import { TH13_LABS } from "@/constants/buildings";
-import { HeroEquipment } from "@/types";
+import { HeroEquipment, Spell, Troop } from "@/types";
 import Image from "next/image";
 import LevelBar from "./LevelBar";
 
-const UnitCard = ({ unit }: { unit: HeroEquipment }) => {
-  return (
-    <div
-      key={unit.name}
-      className="bg-gray-800/70 p-3 rounded-md hover:bg-gray-700/50 transition-colors"
-    >
-      <div className="flex justify-between items-center mb-1">
-        <span className="font-medium text-purple-200 text-sm">{unit.name}</span>
-        <span
-          className={`font-semibold ${
-            unit.level / unit.maxLevel === 1
-              ? "text-green-500"
-              : "text-purple-400"
-          }`}
-        >
-          Lvl {unit.level}/{unit.maxLevel}
-        </span>
-      </div>
-      <LevelBar level={unit.level} maxLevel={unit.maxLevel} />
-    </div>
-  );
-};
-
-const SpellCard = ({ spell }: { spell: HeroEquipment }) => {
-  const spellMaxLevelForTh = TH13_LABS.find((s) => s.name === spell.name)?.maxLevel;
+const SpellCard = ({ spell }: { spell: Spell }) => {
+  const spellMaxLevelForTh = TH13_LABS.find(
+    (s) => s.name === spell.name
+  )?.maxLevel;
   return (
     <div
       key={spell.name}
@@ -49,7 +28,8 @@ const SpellCard = ({ spell }: { spell: HeroEquipment }) => {
             spellMaxLevelForTh && spell.level / spellMaxLevelForTh === 1
               ? "text-green-500"
               : "text-purple-400"
-          }`}>
+          }`}
+        >
           Lvl {spell.level}/{spellMaxLevelForTh}
         </span>
       </div>
@@ -58,8 +38,10 @@ const SpellCard = ({ spell }: { spell: HeroEquipment }) => {
   );
 };
 
-const TroopCard = ({ troop }: { troop: HeroEquipment }) => {
-  const troopMaxLevelForTh = TH13_LABS.find((t) => t.name === troop.name)?.maxLevel;
+const TroopCard = ({ troop }: { troop: Troop }) => {
+  const troopMaxLevelForTh = TH13_LABS.find(
+    (t) => t.name === troop.name
+  )?.maxLevel;
   return (
     <div
       key={troop.name}
@@ -142,8 +124,10 @@ const EquipmentCard = ({
   );
 };
 
-const SiegeCard = ({ siege }: { siege: HeroEquipment }) => {
-  const troopMaxLevelForTh = TH13_LABS.find((t) => t.name === siege.name)?.maxLevel;
+const SiegeCard = ({ siege }: { siege: Troop }) => {
+  const troopMaxLevelForTh = TH13_LABS.find(
+    (t) => t.name === siege.name
+  )?.maxLevel;
   return (
     <div
       key={siege.name}
@@ -175,5 +159,4 @@ const SiegeCard = ({ siege }: { siege: HeroEquipment }) => {
   );
 };
 
-export { EquipmentCard, SiegeCard, SpellCard, TroopCard, UnitCard };
-
+export { EquipmentCard, SiegeCard, SpellCard, TroopCard };
