@@ -113,12 +113,12 @@ export default function BuildingStats({
                                   src={
                                     name === "Giga Inferno"
                                       ? `/images/${
-                                          CATEGORY_NAMES[building.category]
+                                          CATEGORY_NAMES[building.category].toLocaleLowerCase()
                                         }/${name}/${name}_${playerData.townHallLevel}L${
                                           building.level
                                         }.png`
                                       : `/images/${
-                                          CATEGORY_NAMES[building.category]
+                                          CATEGORY_NAMES[building.category].toLocaleLowerCase()
                                         }/${name}/${name}_${building.isGeared ? "Geared_" : ""}${
                                           building.level
                                         }.png`
@@ -184,12 +184,12 @@ export default function BuildingStats({
                                   src={
                                     name === "Giga Inferno"
                                       ? `/images/${
-                                          CATEGORY_NAMES[building.category]
+                                          CATEGORY_NAMES[building.category].toLocaleLowerCase()
                                         }/${name}/${name}_${playerData.townHallLevel}L${
                                           building.level
                                         }.png`
                                       : `/images/${
-                                          CATEGORY_NAMES[building.category]
+                                          CATEGORY_NAMES[building.category].toLocaleLowerCase()
                                         }/${name}/${name}_${building.isGeared ? "Geared_" : ""}${
                                           building.level
                                         }.png`
