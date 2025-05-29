@@ -155,6 +155,7 @@ export async function POST(req: Request) {
         }, { status: 400 });
       }
     } catch (e) {
+      console.error("Error in player tag route", e);
       return NextResponse.json({
         error: "Invalid request format",
         details: "The request body must contain valid JSON with a playerTag field",

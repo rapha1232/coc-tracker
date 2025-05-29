@@ -45,6 +45,7 @@ export async function POST(req: Request) {
         }, { status: 400 });
       }
     } catch (e) {
+      console.error("Error in buildings route", e);
       return NextResponse.json({
         error: "Invalid JSON",
         details: "The request body contains invalid JSON data",
