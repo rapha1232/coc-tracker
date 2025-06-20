@@ -1,16 +1,17 @@
-import { TH13_BUILDINGS } from "@/constants/buildings";
 import { prisma } from "@/lib/prisma";
 import { authOptions } from "@/utils/authOptions";
+import { entityNames, getType } from "coc-info";
 import { getServerSession } from "next-auth";
 import { NextResponse } from "next/server";
+import { pRateLimit } from "p-ratelimit";
 
-interface BuildingLevel {
-  level: number;
-  count: number;
-  isGeared?: boolean;
-}
+const limit = pRateLimit({
+  interval: 1000,
+  rate: 50, // Max 50 requests per second
+  concurrency: 10, // Max 10 concurrent
+});
 
-type BuildingLevels = Record<string, BuildingLevel[]>;
+type IncomingBuilding = { name: string; level: number; isGeared?: boolean };
 
 interface SessionUser {
   id: string;
@@ -25,52 +26,64 @@ export async function POST(req: Request) {
     const user = session?.user as SessionUser | undefined;
 
     if (!user?.id) {
-      return NextResponse.json({ 
-        error: "Authentication required",
-        details: "You must be logged in to save buildings",
-        code: "AUTH_REQUIRED"
-      }, { status: 401 });
+      return NextResponse.json(
+        {
+          error: "Unauthorized Access",
+          details: "Your session is invalid or expired. Please log in again.",
+          resolution: "Refresh the page and try logging in again",
+          code: "AUTH_INVALID_SESSION",
+        },
+        { status: 401 }
+      );
     }
 
-    let buildings: BuildingLevels;
+    let buildings: IncomingBuilding[];
     try {
       const body = await req.json();
       buildings = body.buildings;
-      
-      if (!buildings || typeof buildings !== 'object') {
-        return NextResponse.json({
-          error: "Invalid request format",
-          details: "The buildings data is missing or in an invalid format",
-          code: "INVALID_REQUEST"
-        }, { status: 400 });
+
+      if (!Array.isArray(buildings)) {
+        return NextResponse.json(
+          {
+            error: "Invalid Request Data",
+            details:
+              "The buildings data is either missing or not properly formatted.",
+            resolution:
+              "Ensure you're sending a valid JSON array with a 'buildings' property",
+            code: "INVALID_REQUEST_FORMAT",
+          },
+          { status: 400 }
+        );
       }
     } catch (e) {
-      console.error("Error in buildings route", e);
-      return NextResponse.json({
-        error: "Invalid JSON",
-        details: "The request body contains invalid JSON data",
-        code: "INVALID_JSON"
-      }, { status: 400 });
+      console.error("JSON Parsing Error:", e);
+      return NextResponse.json(
+        {
+          error: "Malformed Request Body",
+          details:
+            "The request body contains invalid JSON data that couldn't be parsed.",
+          resolution: "Check your request body for JSON syntax errors",
+          code: "MALFORMED_JSON",
+        },
+        { status: 400 }
+      );
     }
 
     // Validate building data
-    for (const [name, levels] of Object.entries(buildings)) {
-      if (!Array.isArray(levels)) {
-        return NextResponse.json({
-          error: "Invalid building format",
-          details: `Building "${name}" must have an array of levels`,
-          code: "INVALID_BUILDING_FORMAT"
-        }, { status: 400 });
-      }
-
-      for (const level of levels) {
-        if (typeof level.level !== 'number' || typeof level.count !== 'number') {
-          return NextResponse.json({
-            error: "Invalid level format",
-            details: `Building "${name}" contains invalid level or count values`,
-            code: "INVALID_LEVEL_FORMAT"
-          }, { status: 400 });
-        }
+    for (const building of buildings) {
+      if (
+        typeof building.name !== "string" ||
+        typeof building.level !== "number"
+      ) {
+        return NextResponse.json(
+          {
+            error: "Invalid Building Data",
+            details: `Each building must have a string 'name' and numeric 'level'.`,
+            resolution: "Ensure all buildings have valid 'name' and 'level' properties",
+            code: "INVALID_BUILDING_DATA",
+          },
+          { status: 400 }
+        );
       }
     }
 
@@ -82,31 +95,35 @@ export async function POST(req: Request) {
         },
       });
     } catch (error) {
-      console.error("Error deleting existing buildings:", error);
-      return NextResponse.json({
-        error: "Database error",
-        details: "Failed to delete existing buildings",
-        code: "DB_DELETE_ERROR"
-      }, { status: 500 });
+      console.error("Database Cleanup Error:", error);
+      return NextResponse.json(
+        {
+          error: "Data Preparation Failed",
+          details:
+            "The system couldn't prepare your data for update due to a database error.",
+          resolution: "Please try again in a few minutes",
+          code: "DATA_PREPARATION_ERROR",
+        },
+        { status: 500 }
+      );
     }
 
-    // Get building categories from TH13_BUILDINGS
-    const buildingCategories = TH13_BUILDINGS.reduce((acc, building) => {
-      acc[building.name] = building.category;
-      return acc;
-    }, {} as Record<string, string>);
+    const buildingCategories = Object.fromEntries(
+      entityNames
+        .map((name) => [name, getType(name)])
+        .filter(([, type]) => type !== null)
+    ) as Record<string, string>;
 
     // Create new buildings
     try {
-      const buildingPromises = Object.entries(buildings).flatMap(([name, levels]) =>
-        levels.map(level =>
+      const buildingPromises = buildings.map((building) =>
+        limit(() =>
           prisma.building.create({
             data: {
-              name,
-              level: level.level,
-              count: level.count,
-              isGeared: level.isGeared || false,
-              category: buildingCategories[name] || 'Other',
+              name: building.name,
+              level: building.level,
+              isGeared: building.isGeared || false,
+              category: buildingCategories[building.name] || "Other",
               userId: user.id,
             },
           })
@@ -115,25 +132,61 @@ export async function POST(req: Request) {
 
       await Promise.all(buildingPromises);
     } catch (error) {
-      console.error("Error creating new buildings:", error);
-      return NextResponse.json({
-        error: "Database error",
-        details: "Failed to save new buildings",
-        code: "DB_CREATE_ERROR"
-      }, { status: 500 });
+      console.error("Data Persistence Error:", error);
+
+      // Prepare error details for development
+      let errorDetails = {};
+      if (process.env.NODE_ENV === "development") {
+        errorDetails = {
+          prismaError:
+            error instanceof Error
+              ? {
+                  name: error.name,
+                  message: error.message,
+                  stack: error.stack,
+                }
+              : error,
+          problematicBuildings: buildings,
+        };
+      }
+
+      return NextResponse.json(
+        {
+          error: "Data Save Failed",
+          details: "Your building data couldn't be saved to the database.",
+          resolution:
+            "Please check your data and try again. If the problem persists, contact support.",
+          code: "DATA_PERSISTENCE_ERROR",
+          ...(process.env.NODE_ENV === "development" && {
+            debugInfo: {
+              errorType:
+                error instanceof Error ? error.constructor.name : typeof error,
+              ...errorDetails,
+            },
+          }),
+        },
+        { status: 500 }
+      );
     }
 
-    return NextResponse.json({
-      message: "Buildings saved successfully",
-      details: "All building data has been updated"
-    }, { status: 200 });
-    
+    return NextResponse.json(
+      {
+        success: true,
+        message: "Building data saved successfully",
+        details: "All your building configurations have been securely stored.",
+      },
+      { status: 200 }
+    );
   } catch (error) {
-    console.error("Unexpected error while saving buildings:", error);
-    return NextResponse.json({
-      error: "Internal server error",
-      details: "An unexpected error occurred while processing your request",
-      code: "INTERNAL_ERROR"
-    }, { status: 500 });
+    console.error("Unexpected Error:", error);
+    return NextResponse.json(
+      {
+        error: "Unexpected Error",
+        details: "An unexpected error occurred while processing your request.",
+        resolution: "Please try again later.",
+        code: "UNEXPECTED_ERROR",
+      },
+      { status: 500 }
+    );
   }
-} 
+}

@@ -1,11 +1,16 @@
-import { TH13_HEROES, TH13_LABS } from "@/constants/buildings";
 import { Main } from "@/types";
+import { sortByCompletion } from "@/utils/calculations";
 import { Building } from "@prisma/client";
-import Image from "next/image";
+import { entityNames, getType, getUses } from "coc-info";
 import { useState } from "react";
-import BuildingStats from "./BuildingStats";
+import BuildersTab from "./dashboard-tabs/builders-tab/builders-tab";
+import BuildingStats from "./dashboard-tabs/BuildingStats";
+import ComingSoonTab from "./dashboard-tabs/coming-soon";
+import HeroesTab from "./dashboard-tabs/hero-tab";
+import SiegesTab from "./dashboard-tabs/sieges-tab";
+import SpellsTab from "./dashboard-tabs/spells-tab";
+import TroopsTab from "./dashboard-tabs/troops-tab";
 import EquipmentTab from "./EquipmentTab";
-import { SiegeCard, SpellCard, TroopCard } from "./UnitCard";
 import WallStats from "./WallStats";
 
 interface DashboardTabsProps {
@@ -13,7 +18,7 @@ interface DashboardTabsProps {
   playerData: Main;
 }
 
-type TabType = 
+type TabType =
   | "defenses"
   | "traps"
   | "army"
@@ -30,8 +35,12 @@ type TabType =
   | "lab"
   | "stats";
 
-export default function DashboardTabs({ buildings, playerData }: DashboardTabsProps) {
+export default function DashboardTabs({
+  buildings,
+  playerData,
+}: DashboardTabsProps) {
   const [activeTab, setActiveTab] = useState<TabType>("defenses");
+  const [currentBuildings, setCurrentBuildings] = useState(buildings);
 
   const tabs: { id: TabType; label: string; isPrep?: boolean }[] = [
     { id: "defenses", label: "Defenses" },
@@ -45,308 +54,146 @@ export default function DashboardTabs({ buildings, playerData }: DashboardTabsPr
     { id: "heroes", label: "Heroes" },
     { id: "equipment", label: "Equipment" },
     { id: "walls", label: "Walls" },
-    { id: "forge", label: "Forge", isPrep: true },
-    { id: "builders", label: "Builders", isPrep: true },
+    { id: "builders", label: "Builders" },
     { id: "lab", label: "Lab", isPrep: true },
-    { id: "stats", label: "Stats", isPrep: true }
+    { id: "stats", label: "Stats", isPrep: true },
   ];
 
-  // Get lists of troops by type from lab data
-  const regularTroops = TH13_LABS.filter(t => t.category === "Troops" && t.uses === "Elixir").map(t => t.name);
-  const darkTroops = TH13_LABS.filter(t => t.category === "Troops" && t.uses === "Dark Elixir").map(t => t.name);
-  const siegeMachines = TH13_LABS.filter(t => t.category === "Siege Machine").map(t => t.name);
-  const normalSpells = TH13_LABS.filter(t => t.category === "Spells" && t.uses === "Elixir").map(t => t.name);
-  const darkSpells = TH13_LABS.filter(t => t.category === "Spells" && t.uses === "Dark Elixir").map(t => t.name);
+  const filterEntities = (category: string, resource?: string) => {
+    return entityNames.filter((name) => {
+      const type = getType(name);
+      const uses = getUses(name);
+      return type === category && (resource ? uses === resource : true);
+    });
+  };
+
+  const regularTroops = filterEntities("troop", "elixir");
+  const darkTroops = filterEntities("troop", "dark elixir");
+  const siegeMachines = filterEntities("siege");
+  const normalSpells = filterEntities("spell", "elixir");
+  const darkSpells = filterEntities("spell", "dark elixir");
 
   const renderTabContent = () => {
     switch (activeTab) {
       case "defenses":
-        return <BuildingStats buildings={buildings.filter(b => b.category === "Defense")} playerData={playerData} />;
+        return (
+          <BuildingStats
+            key="defenses"
+            buildings={currentBuildings.filter((b) => b.category === "defense")}
+            playerData={playerData}
+          />
+        );
       case "traps":
-        return <BuildingStats buildings={buildings.filter(b => b.category === "Trap")} playerData={playerData} />;
+        return (
+          <BuildingStats
+            key="traps"
+            buildings={currentBuildings.filter((b) => b.category === "trap")}
+            playerData={playerData}
+          />
+        );
       case "army":
-        return <BuildingStats buildings={buildings.filter(b => b.category === "Army")} playerData={playerData} />;
+        return (
+          <BuildingStats
+            key="army"
+            buildings={currentBuildings.filter((b) => b.category === "army")}
+            playerData={playerData}
+          />
+        );
       case "resources":
-        return <BuildingStats buildings={buildings.filter(b => b.category === "Resource")} playerData={playerData} />;
+        return (
+          <BuildingStats
+            key="resources"
+            buildings={currentBuildings.filter(
+              (b) => b.category === "resource"
+            )}
+            playerData={playerData}
+          />
+        );
       case "troops":
         const regularTroopsData = playerData.troops
-          .filter(troop => regularTroops.includes(troop.name) && troop.village === "home")
-          .sort((a, b) => {
-            const aMaxLevel = TH13_LABS.find(t => t.name === a.name)?.maxLevel || 0;
-            const bMaxLevel = TH13_LABS.find(t => t.name === b.name)?.maxLevel || 0;
-            const aIsComplete = a.level === aMaxLevel;
-            const bIsComplete = b.level === bMaxLevel;
-            if (aIsComplete === bIsComplete) return a.name.localeCompare(b.name);
-            return aIsComplete ? -1 : 1;
-          });
+          .filter(
+            (troop) =>
+              regularTroops.includes(troop.name) && troop.village === "home"
+          )
+          .sort(sortByCompletion(playerData.townHallLevel));
 
-        return (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-medium text-purple-300 mb-3">Complete</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {regularTroopsData.filter(troop => {
-                  const maxLevel = TH13_LABS.find(t => t.name === troop.name)?.maxLevel || 0;
-                  return troop.level === maxLevel;
-                }).map(troop => (
-                  <TroopCard key={troop.name} troop={troop} />
-                ))}
-              </div>
-            </div>
-            <div>
-              <h3 className="text-lg font-medium text-purple-300 mb-3">In Progress</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {regularTroopsData.filter(troop => {
-                  const maxLevel = TH13_LABS.find(t => t.name === troop.name)?.maxLevel || 0;
-                  return troop.level < maxLevel;
-                }).map(troop => (
-                  <TroopCard key={troop.name} troop={troop} />
-                ))}
-              </div>
-            </div>
-          </div>
-        );
+        return <TroopsTab troops={regularTroopsData} playerData={playerData} />;
       case "spells":
         const normalSpellsData = playerData.spells
-          .filter(spell => normalSpells.includes(spell.name))
-          .sort((a, b) => {
-            const aMaxLevel = TH13_LABS.find(t => t.name === a.name)?.maxLevel || 0;
-            const bMaxLevel = TH13_LABS.find(t => t.name === b.name)?.maxLevel || 0;
-            const aIsComplete = a.level === aMaxLevel;
-            const bIsComplete = b.level === bMaxLevel;
-            if (aIsComplete === bIsComplete) return a.name.localeCompare(b.name);
-            return aIsComplete ? -1 : 1;
-          });
+          .filter(
+            (spell) =>
+              normalSpells.includes(spell.name) && spell.village === "home"
+          )
+          .sort(sortByCompletion(playerData.townHallLevel));
 
         const darkSpellsData = playerData.spells
-          .filter(spell => darkSpells.includes(spell.name))
-          .sort((a, b) => {
-            const aMaxLevel = TH13_LABS.find(t => t.name === a.name)?.maxLevel || 0;
-            const bMaxLevel = TH13_LABS.find(t => t.name === b.name)?.maxLevel || 0;
-            const aIsComplete = a.level === aMaxLevel;
-            const bIsComplete = b.level === bMaxLevel;
-            if (aIsComplete === bIsComplete) return a.name.localeCompare(b.name);
-            return aIsComplete ? -1 : 1;
-          });
+          .filter(
+            (spell) =>
+              darkSpells.includes(spell.name) && spell.village === "home"
+          )
+          .sort(sortByCompletion(playerData.townHallLevel));
 
         return (
           <div className="space-y-8">
-            <div className="space-y-6">
-              <h3 className="text-lg font-medium text-purple-300 mb-3">Normal Spells</h3>
-              <div>
-                <h4 className="text-md font-medium text-purple-300 mb-3">Complete</h4>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                  {normalSpellsData.filter(spell => {
-                    const maxLevel = TH13_LABS.find(t => t.name === spell.name)?.maxLevel || 0;
-                    return spell.level === maxLevel;
-                  }).map(spell => (
-                    <SpellCard key={spell.name} spell={spell} />
-                  ))}
-                </div>
-              </div>
-              <div>
-                <h4 className="text-md font-medium text-purple-300 mb-3">In Progress</h4>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                  {normalSpellsData.filter(spell => {
-                    const maxLevel = TH13_LABS.find(t => t.name === spell.name)?.maxLevel || 0;
-                    return spell.level < maxLevel;
-                  }).map(spell => (
-                    <SpellCard key={spell.name} spell={spell} />
-                  ))}
-                </div>
-              </div>
-            </div>
-            <div className="space-y-6">
-              <h3 className="text-lg font-medium text-purple-300 mb-3">Dark Spells</h3>
-              <div>
-                <h4 className="text-md font-medium text-purple-300 mb-3">Complete</h4>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                  {darkSpellsData.filter(spell => {
-                    const maxLevel = TH13_LABS.find(t => t.name === spell.name)?.maxLevel || 0;
-                    return spell.level === maxLevel;
-                  }).map(spell => (
-                    <SpellCard key={spell.name} spell={spell} />
-                  ))}
-                </div>
-              </div>
-              <div>
-                <h4 className="text-md font-medium text-purple-300 mb-3">In Progress</h4>
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                  {darkSpellsData.filter(spell => {
-                    const maxLevel = TH13_LABS.find(t => t.name === spell.name)?.maxLevel || 0;
-                    return spell.level < maxLevel;
-                  }).map(spell => (
-                    <SpellCard key={spell.name} spell={spell} />
-                  ))}
-                </div>
-              </div>
-            </div>
+            <SpellsTab
+              spells={normalSpellsData}
+              title="Normal Spells"
+              playerData={playerData}
+            />
+            <SpellsTab
+              spells={darkSpellsData}
+              title="Dark Spells"
+              playerData={playerData}
+            />
           </div>
         );
       case "darkTroops":
         const darkTroopsData = playerData.troops
-          .filter(troop => darkTroops.includes(troop.name) && troop.village === "home")
-          .sort((a, b) => {
-            const aMaxLevel = TH13_LABS.find(t => t.name === a.name)?.maxLevel || 0;
-            const bMaxLevel = TH13_LABS.find(t => t.name === b.name)?.maxLevel || 0;
-            const aIsComplete = a.level === aMaxLevel;
-            const bIsComplete = b.level === bMaxLevel;
-            if (aIsComplete === bIsComplete) return a.name.localeCompare(b.name);
-            return aIsComplete ? -1 : 1;
-          });
+          .filter(
+            (troop) =>
+              darkTroops.includes(troop.name) && troop.village === "home"
+          )
+          .sort(sortByCompletion(playerData.townHallLevel));
 
-        return (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-medium text-purple-300 mb-3">Complete</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {darkTroopsData.filter(troop => {
-                  const maxLevel = TH13_LABS.find(t => t.name === troop.name)?.maxLevel || 0;
-                  return troop.level === maxLevel;
-                }).map(troop => (
-                  <TroopCard key={troop.name} troop={troop} />
-                ))}
-              </div>
-            </div>
-            <div>
-              <h3 className="text-lg font-medium text-purple-300 mb-3">In Progress</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {darkTroopsData.filter(troop => {
-                  const maxLevel = TH13_LABS.find(t => t.name === troop.name)?.maxLevel || 0;
-                  return troop.level < maxLevel;
-                }).map(troop => (
-                  <TroopCard key={troop.name} troop={troop} />
-                ))}
-              </div>
-            </div>
-          </div>
-        );
+        return <TroopsTab troops={darkTroopsData} playerData={playerData} />;
       case "sieges":
         const siegesData = playerData.troops
-          .filter(troop => siegeMachines.includes(troop.name) && troop.village === "home")
-          .sort((a, b) => {
-            const aMaxLevel = TH13_LABS.find(t => t.name === a.name)?.maxLevel || 0;
-            const bMaxLevel = TH13_LABS.find(t => t.name === b.name)?.maxLevel || 0;
-            const aIsComplete = a.level === aMaxLevel;
-            const bIsComplete = b.level === bMaxLevel;
-            if (aIsComplete === bIsComplete) return a.name.localeCompare(b.name);
-            return aIsComplete ? -1 : 1;
-          });
+          .filter(
+            (troop) =>
+              siegeMachines.includes(troop.name) && troop.village === "home"
+          )
+          .sort(sortByCompletion(playerData.townHallLevel));
 
-        return (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-medium text-purple-300 mb-3">Complete</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {siegesData.filter(troop => {
-                  const maxLevel = TH13_LABS.find(t => t.name === troop.name)?.maxLevel || 0;
-                  return troop.level === maxLevel;
-                }).map(troop => (
-                  <SiegeCard key={troop.name} siege={troop} />
-                ))}
-              </div>
-            </div>
-            <div>
-              <h3 className="text-lg font-medium text-purple-300 mb-3">In Progress</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {siegesData.filter(troop => {
-                  const maxLevel = TH13_LABS.find(t => t.name === troop.name)?.maxLevel || 0;
-                  return troop.level < maxLevel;
-                }).map(troop => (
-                  <SiegeCard key={troop.name} siege={troop} />
-                ))}
-              </div>
-            </div>
-          </div>
-        );
+        return <SiegesTab sieges={siegesData} playerData={playerData} />;
       case "heroes":
         const heroesData = playerData.heroes
-          .filter(hero => hero.village === "home")
-          .sort((a, b) => {
-            const aMaxLevel = TH13_HEROES.find(h => h.name === a.name)?.maxLevel || 0;
-            const bMaxLevel = TH13_HEROES.find(h => h.name === b.name)?.maxLevel || 0;
-            const aIsComplete = a.level === aMaxLevel;
-            const bIsComplete = b.level === bMaxLevel;
-            if (aIsComplete === bIsComplete) return a.name.localeCompare(b.name);
-            return aIsComplete ? -1 : 1;
-          });
+          .filter((hero) => hero.village === "home")
+          .sort(sortByCompletion(playerData.townHallLevel));
 
-        return (
-          <div className="space-y-6">
-            <div>
-              <h3 className="text-lg font-medium text-purple-300 mb-3">Complete</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {heroesData.filter(hero => {
-                  const maxLevel = TH13_HEROES.find(h => h.name === hero.name)?.maxLevel || 0;
-                  return hero.level === maxLevel;
-                }).map(hero => (
-                  <div
-                    key={hero.name}
-                    className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm rounded-lg p-4 border border-purple-900/30 hover:border-purple-500/50 transition-all duration-300"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="relative w-16 h-16 flex items-center justify-center bg-gradient-to-br from-gray-700/50 to-gray-800/50 rounded-lg overflow-hidden">
-                        <Image
-                          src={`/images/hero/${hero.name}.png`}
-                          alt={hero.name}
-                          width={48}
-                          height={48}
-                          className="object-contain w-auto h-auto max-w-full max-h-full"
-                        />
-                      </div>
-                      <div>
-                        <h3 className="text-purple-200 font-medium">{hero.name}</h3>
-                        <p className="text-purple-400">Level {hero.level}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-            <div>
-              <h3 className="text-lg font-medium text-purple-300 mb-3">In Progress</h3>
-              <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-                {heroesData.filter(hero => {
-                  const maxLevel = TH13_HEROES.find(h => h.name === hero.name)?.maxLevel || 0;
-                  return hero.level < maxLevel;
-                }).map(hero => (
-                  <div
-                    key={hero.name}
-                    className="bg-gradient-to-br from-gray-800/50 to-gray-900/50 backdrop-blur-sm rounded-lg p-4 border border-purple-900/30 hover:border-purple-500/50 transition-all duration-300"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="relative w-16 h-16 flex items-center justify-center bg-gradient-to-br from-gray-700/50 to-gray-800/50 rounded-lg overflow-hidden">
-                        <Image
-                          src={`/images/hero/${hero.name}.png`}
-                          alt={hero.name}
-                          width={48}
-                          height={48}
-                          className="object-contain w-auto h-auto max-w-full max-h-full"
-                        />
-                      </div>
-                      <div>
-                        <h3 className="text-purple-200 font-medium">{hero.name}</h3>
-                        <p className="text-purple-400">Level {hero.level}</p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        );
+        return <HeroesTab heroes={heroesData} playerData={playerData} />;
       case "equipment":
         return <EquipmentTab playerData={playerData} />;
       case "walls":
-        return <WallStats buildings={buildings.filter(b => b.category === "Wall" || b.name.toLowerCase().includes("wall"))} playerData={playerData} />;
+        return (
+          <WallStats
+            buildings={currentBuildings.filter(
+              (b) =>
+                b.category === "Wall" || b.name.toLowerCase().includes("wall")
+            )}
+            playerData={playerData}
+          />
+        );
+      case "builders":
+        return (
+          <BuildersTab
+            buildings={currentBuildings}
+            playerData={playerData}
+            onBuildingsUpdate={setCurrentBuildings}
+          />
+        );
       default:
-        if (tabs.find(tab => tab.id === activeTab)?.isPrep) {
-          return (
-            <div className="text-center py-12 text-purple-400">
-              <p className="text-xl">Coming Soon</p>
-              <p className="mt-2 text-purple-300/60">This feature is under development</p>
-            </div>
-          );
+        if (tabs.find((tab) => tab.id === activeTab)?.isPrep) {
+          return <ComingSoonTab />;
         }
         return null;
     }
@@ -375,4 +222,4 @@ export default function DashboardTabs({ buildings, playerData }: DashboardTabsPr
       </div>
     </div>
   );
-} 
+}

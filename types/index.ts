@@ -1,3 +1,7 @@
+// Many of these types are now available from coc-info. Use or extend coc-info types where possible.
+// Example:
+// import type { EntityType, ResourceType, GearUpData, DataStructure } from "coc-info";
+
 export interface Main {
   tag: string;
   name: string;
@@ -23,11 +27,15 @@ export interface Main {
   achievements: Achievement[];
   playerHouse: PlayerHouse;
   labels: Label[];
-  troops: Troop[];
-  heroes: Hero[];
+  troops: Troop[]; // Consider: Troop extends coc-info type
+  heroes: Hero[]; // Consider: Hero extends coc-info type
   heroEquipment: HeroEquipment[];
-  spells: Spell[];
+  spells: Spell[]; // Consider: Spell extends coc-info type
 }
+
+// Example extension:
+// import type { Troop as CocInfoTroop } from "coc-info";
+// export interface Troop extends CocInfoTroop { level: number; maxLevel: number; }
 
 export interface Achievement {
   name: string;
@@ -155,3 +163,25 @@ export interface ProgressHistory {
   totalTroops: number;
   maxedTroops: number;
 }
+
+import { Building as PrismaBuilding } from "@prisma/client";
+
+export type BuildingCategory =
+  | "defense"
+  | "resource"
+  | "army"
+  | "trap"
+  | "walls"
+  | "other";
+
+export interface Building extends PrismaBuilding {
+  maxLevel: number;
+  category: BuildingCategory;
+}
+
+export interface BuildingLevel {
+  level: number;
+  isGeared?: boolean;
+}
+
+export type BuildingLevels = Record<string, BuildingLevel[]>;

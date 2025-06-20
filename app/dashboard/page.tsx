@@ -1,7 +1,6 @@
 "use client";
 
 import DashboardTabs from "@/components/DashboardTabs";
-import PlayerTagInput from "@/components/PlayerTagInput";
 import ProgressOverview from "@/components/ProgressOverview";
 import { Main } from "@/types";
 import { Building } from "@prisma/client";
@@ -52,27 +51,6 @@ export default function DashboardPage() {
     }
   }, [status]);
 
-  const handlePlayerTagSubmit = async (tag: string) => {
-    try {
-      const response = await fetch("/api/clash/player", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ playerTag: tag }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to update player tag");
-      }
-
-      // Refresh the page to update data
-      window.location.reload();
-    } catch (error) {
-      throw error;
-    }
-  };
-
   if (status === "loading" || isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-gradient-to-b from-gray-900 to-black">
@@ -92,14 +70,25 @@ export default function DashboardPage() {
                 <h1 className="text-3xl font-bold text-purple-300">
                   {userData.name}&apos;s Village
                 </h1>
-                <h4 className="text-purple-400">
-                  {userData.tag}
-                </h4>
-                  <Image src={`/images/townhall/Town_Hall${userData.townHallLevel}${userData.townHallWeaponLevel  ? `L${userData.townHallWeaponLevel}` : ""}.png`} alt="Town Hall" width={150} height={150} />
+                <h4 className="text-purple-400">{userData.tag}</h4>
+                <Image
+                  src={`/images/resource/Townhall/Town_Hall${
+                    userData.townHallLevel
+                  }${
+                    userData.townHallWeaponLevel
+                      ? `L${userData.townHallWeaponLevel}`
+                      : ""
+                  }.png`}
+                  alt="Town Hall"
+                  width={150}
+                  height={150}
+                />
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
                   <div className="bg-gray-700/50 p-3 rounded-lg">
                     <p className="text-purple-400 text-sm">Town Hall</p>
-                    <p className="text-xl font-semibold">{userData.townHallLevel}</p>
+                    <p className="text-xl font-semibold">
+                      {userData.townHallLevel}
+                    </p>
                   </div>
                   <div className="bg-gray-700/50 p-3 rounded-lg">
                     <p className="text-purple-400 text-sm">Trophies</p>
@@ -111,7 +100,9 @@ export default function DashboardPage() {
                   </div>
                   <div className="bg-gray-700/50 p-3 rounded-lg">
                     <p className="text-purple-400 text-sm">League</p>
-                    <p className="text-xl font-semibold">{userData.league?.name || "Unranked"}</p>
+                    <p className="text-xl font-semibold">
+                      {userData.league?.name || "Unranked"}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -121,20 +112,6 @@ export default function DashboardPage() {
               >
                 Update Buildings
               </button>
-            </div>
-          </div>
-        )}
-
-        {!userData?.tag && (
-          <div className="bg-gray-800/90 backdrop-blur-sm rounded-xl shadow-2xl overflow-hidden border border-purple-900/50 p-6 mb-8">
-            <h2 className="text-xl font-semibold mb-4 text-purple-300">
-              Link Your Account
-            </h2>
-            <p className="text-purple-400 mb-6">
-              Enter your Clash of Clans player tag to link your account.
-            </p>
-            <div className="max-w-md">
-              <PlayerTagInput onSubmit={handlePlayerTagSubmit} />
             </div>
           </div>
         )}

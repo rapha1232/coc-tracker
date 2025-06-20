@@ -1,77 +1,86 @@
-import { TH13_BUILDINGS, TH13_HEROES, TH13_LABS } from "@/constants/buildings";
 import { Main } from "@/types";
 import { Building } from "@prisma/client";
+import { getMaxLevel, getType } from "coc-info";
 
 interface ProgressOverviewProps {
   buildings: Building[];
   playerData: Main;
 }
 
-export default function ProgressOverview({ buildings, playerData }: ProgressOverviewProps) {
-  // Calculate building progress (excluding walls)
-  const buildingProgress = buildings
-    .filter(b => b.category !== "Walls" && b.category !== "Traps")
-    .reduce((acc, building) => {
-      return acc + (building.level * building.count);
-    }, 0);
+export default function ProgressOverview({
+  buildings,
+  playerData,
+}: ProgressOverviewProps) {
+  const thLevel = playerData.townHallLevel;
 
-  const totalBuildingLevels = buildings
-    .filter(b => b.category !== "Walls" && b.category !== "Traps")
-    .reduce((acc, building) => {
-      const buildingInfo = TH13_BUILDINGS.find(b => b.name === building.name);
-      if (buildingInfo) {
-        return acc + (buildingInfo.maxLevel * buildingInfo.count);
+  // Calculate building progress (excluding walls and traps)
+  const { buildingProgress, totalBuildingLevels } = buildings.reduce(
+    (acc, building) => {
+      const type = getType(building.name);
+      if (type === "Walls" || type === "Trap") {
+        return acc;
       }
-      return acc;
-    }, 0);
+      const maxLevel = getMaxLevel(building.name, thLevel) || 0;
+      return {
+        buildingProgress: acc.buildingProgress + building.level,
+        totalBuildingLevels: acc.totalBuildingLevels + maxLevel,
+      };
+    },
+    { buildingProgress: 0, totalBuildingLevels: 0 }
+  );
 
-  const buildingPercentage = totalBuildingLevels > 0 ? (buildingProgress / totalBuildingLevels) * 100 : 0;
+  const buildingPercentage = totalBuildingLevels > 0
+    ? (buildingProgress / totalBuildingLevels) * 100
+    : 0;
 
-  // Calculate lab progress (troops, spells)
-  const labUnits = [...playerData.troops, ...playerData.spells]
-    .filter(unit => 
-      unit.village === "home" && 
-      TH13_LABS.some(lab => lab.name === unit.name)
+  // Calculate lab progress (troops and spells)
+  const { labProgress, labTotal } = [...playerData.troops, ...playerData.spells]
+    .filter((unit) => unit.village === "home")
+    .reduce(
+      (acc, unit) => {
+        const maxLevel = getMaxLevel(unit.name, thLevel) || 0;
+        if (maxLevel <= 0) return acc;
+
+        return {
+          labProgress: acc.labProgress + unit.level,
+          labTotal: acc.labTotal + maxLevel,
+        };
+      },
+      { labProgress: 0, labTotal: 0 }
     );
-
-  const labProgress = labUnits.reduce((acc, unit) => {
-    return acc + unit.level;
-  }, 0);
-
-  const labTotal = labUnits.reduce((acc, unit) => {
-    const labInfo = TH13_LABS.find(l => l.name === unit.name);
-    if (labInfo) {
-      return acc + labInfo.maxLevel;
-    }
-    return acc;
-  }, 0);
 
   const labPercentage = labTotal > 0 ? (labProgress / labTotal) * 100 : 0;
 
-  // Calculate walls progress
-  const walls = buildings.filter(b => b.name === "Wall");
-  const wallMaxLevel = TH13_BUILDINGS.find(b => b.name === "Wall")?.maxLevel || 1;
+  // Calculate walls progress - FIXED VERSION
+  const wallSegments = buildings.filter(
+    (building) => getType(building.name) === "walls"
+  );
+  const { wallProgress, wallTotal } = wallSegments.reduce(
+    (acc, wall) => {
+      const maxLevel = getMaxLevel(wall.name, thLevel) || 1;
+      return {
+        wallProgress: acc.wallProgress + wall.level,
+        wallTotal: acc.wallTotal + maxLevel,
+      };
+    },
+    { wallProgress: 0, wallTotal: 0 }
+  );
 
-  const wallProgress = walls.reduce((acc, wall) => {
-    return acc + wall.level * wall.count;
-  }, 0);
-
-  const wallTotal = walls.reduce((acc, wall) => {
-    return acc + wallMaxLevel * wall.count;
-  }, 0);
-
-  const wallPercentage = wallTotal > 0 ? (wallProgress / wallTotal) * 100 : 0;
+  const wallPercentage = wallTotal > 0 ? (wallProgress / wallTotal) * 100 : 50;
 
   // Calculate heroes progress
-  const homeHeroes = playerData.heroes.filter(hero => hero.village === "home");
-  
-  const heroProgress = homeHeroes.reduce((acc, hero) => {
-    return acc + hero.level;
-  }, 0);
-
-  const heroTotal = homeHeroes.reduce((acc, hero) => {
-    return acc + (TH13_HEROES.find(h => h.name === hero.name)?.maxLevel || 0);
-  }, 0);
+  const { heroProgress, heroTotal } = playerData.heroes
+    .filter((hero) => hero.village === "home")
+    .reduce(
+      (acc, hero) => {
+        const maxLevel = getMaxLevel(hero.name, thLevel) || 0;
+        return {
+          heroProgress: acc.heroProgress + hero.level,
+          heroTotal: acc.heroTotal + maxLevel,
+        };
+      },
+      { heroProgress: 0, heroTotal: 0 }
+    );
 
   const heroPercentage = heroTotal > 0 ? (heroProgress / heroTotal) * 100 : 0;
 
@@ -114,11 +123,13 @@ export default function ProgressOverview({ buildings, playerData }: ProgressOver
           <div className="h-2 bg-gray-700 rounded-full overflow-hidden">
             <div
               className={`h-full bg-gradient-to-r ${item.color} transition-all duration-500`}
-              style={{ width: `${Math.min(100, Math.max(0, item.percentage))}%` }}
+              style={{
+                width: `${Math.min(100, Math.max(0, item.percentage))}%`,
+              }}
             />
           </div>
         </div>
       ))}
     </div>
   );
-} 
+}

@@ -17,6 +17,7 @@ export default function LoginForm() {
     const email = formData.get("email") as string;
     const password = formData.get("password") as string;
     const name = formData.get("name") as string;
+    const playerTag = formData.get("playerTag") as string;
 
     if (isLogin) {
       // Handle login
@@ -44,6 +45,7 @@ export default function LoginForm() {
             name,
             email,
             password,
+            playerTag: playerTag.startsWith('#') ? playerTag : `#${playerTag}`,
           }),
         });
 
@@ -85,21 +87,39 @@ export default function LoginForm() {
       )}
 
       {!isLogin && (
-        <div>
-          <label
-            htmlFor="name"
-            className="block text-sm font-medium text-purple-200"
-          >
-            Name
-          </label>
-          <input
-            id="name"
-            name="name"
-            type="text"
-            required={!isLogin}
-            className="mt-1 block w-full px-3 py-2 bg-gray-800/70 border border-purple-700 rounded-md text-purple-200 placeholder-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors"
-          />
-        </div>
+        <>
+          <div>
+            <label
+              htmlFor="name"
+              className="block text-sm font-medium text-purple-200"
+            >
+              Name
+            </label>
+            <input
+              id="name"
+              name="name"
+              type="text"
+              required={!isLogin}
+              className="mt-1 block w-full px-3 py-2 bg-gray-800/70 border border-purple-700 rounded-md text-purple-200 placeholder-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors"
+            />
+          </div>
+          <div>
+            <label
+              htmlFor="playerTag"
+              className="block text-sm font-medium text-purple-200"
+            >
+              Clash of Clans Player Tag
+            </label>
+            <input
+              id="playerTag"
+              name="playerTag"
+              type="text"
+              required={!isLogin}
+              placeholder="#XXXXXX"
+              className="mt-1 block w-full px-3 py-2 bg-gray-800/70 border border-purple-700 rounded-md text-purple-200 placeholder-purple-400 focus:outline-none focus:ring-2 focus:ring-purple-500 transition-colors"
+            />
+          </div>
+        </>
       )}
 
       <div>

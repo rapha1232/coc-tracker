@@ -1,18 +1,22 @@
-import { TH13_LABS } from "@/constants/buildings";
-import { HeroEquipment, Spell, Troop } from "@/types";
+import { HeroEquipment, Main, Spell, Troop } from "@/types";
+import { getMaxLevel } from "coc-info";
 import Image from "next/image";
 import LevelBar from "./LevelBar";
 
 const SpellCard = ({ spell }: { spell: Spell }) => {
-  const spellMaxLevelForTh = TH13_LABS.find(
-    (s) => s.name === spell.name
-  )?.maxLevel;
+  const sml = getMaxLevel(spell.name, 13);
+  const isComplete = sml && spell.level === sml;
+
   return (
     <div
       key={spell.name}
-      className="bg-gray-800/70 p-3 rounded-md hover:bg-gray-700/50 transition-colors"
+      className={`${
+        isComplete
+          ? "bg-gradient-to-br from-green-900/20 to-gray-900/50 border-green-900/30 hover:border-green-500/50"
+          : "bg-gradient-to-br from-amber-900/20 to-gray-900/50 border-amber-900/30 hover:border-amber-500/50"
+      } p-3 rounded-md border backdrop-blur-sm transition-all duration-300 shadow-lg hover:shadow-purple-900/20`}
     >
-      <div className="flex justify-between items-center mb-1">
+      <div className="flex justify-between items-center mb-2">
         <Image
           src={`/images/spell/${spell.name}.png`}
           alt={spell.name}
@@ -25,29 +29,38 @@ const SpellCard = ({ spell }: { spell: Spell }) => {
         </span>
         <span
           className={`font-semibold ${
-            spellMaxLevelForTh && spell.level / spellMaxLevelForTh === 1
-              ? "text-green-500"
-              : "text-purple-400"
+            isComplete ? "text-green-500" : "text-amber-400"
           }`}
         >
-          Lvl {spell.level}/{spellMaxLevelForTh}
+          Lvl {spell.level}/{sml || 0}
         </span>
       </div>
-      <LevelBar level={spell.level} maxLevel={spellMaxLevelForTh || 0} />
+      <LevelBar level={spell.level} maxLevel={sml || 0} />
     </div>
   );
 };
 
-const TroopCard = ({ troop }: { troop: Troop }) => {
-  const troopMaxLevelForTh = TH13_LABS.find(
-    (t) => t.name === troop.name
-  )?.maxLevel;
+const TroopCard = ({
+  troop,
+  playerData,
+}: {
+  troop: Troop;
+  playerData: Main;
+}) => {
+  const troopMaxLevelForTh =
+    getMaxLevel(troop.name, playerData.townHallLevel) || 0;
+  const isComplete = troopMaxLevelForTh && troop.level === troopMaxLevelForTh;
+
   return (
     <div
       key={troop.name}
-      className="bg-gray-800/70 p-3 rounded-md hover:bg-gray-700/50 transition-colors"
+      className={`${
+        isComplete
+          ? "bg-gradient-to-br from-green-900/20 to-gray-900/50 border-green-900/30 hover:border-green-500/50"
+          : "bg-gradient-to-br from-amber-900/20 to-gray-900/50 border-amber-900/30 hover:border-amber-500/50"
+      } p-3 rounded-md border backdrop-blur-sm transition-all duration-300 shadow-lg hover:shadow-purple-900/20`}
     >
-      <div className="flex justify-between items-center mb-1">
+      <div className="flex justify-between items-center mb-2">
         <Image
           src={`/images/troop/${troop.name}.webp`}
           alt={troop.name}
@@ -60,9 +73,7 @@ const TroopCard = ({ troop }: { troop: Troop }) => {
         </span>
         <span
           className={`font-semibold ${
-            troopMaxLevelForTh && troop.level / troopMaxLevelForTh === 1
-              ? "text-green-500"
-              : "text-purple-400"
+            isComplete ? "text-green-500" : "text-amber-400"
           }`}
         >
           Lvl {troop.level}/{troopMaxLevelForTh}
@@ -124,16 +135,27 @@ const EquipmentCard = ({
   );
 };
 
-const SiegeCard = ({ siege }: { siege: Troop }) => {
-  const troopMaxLevelForTh = TH13_LABS.find(
-    (t) => t.name === siege.name
-  )?.maxLevel;
+const SiegeCard = ({
+  siege,
+  playerData,
+}: {
+  siege: Troop;
+  playerData: Main;
+}) => {
+  const troopMaxLevelForTh =
+    getMaxLevel(siege.name, playerData.townHallLevel) || 0;
+  const isComplete = troopMaxLevelForTh && siege.level === troopMaxLevelForTh;
+
   return (
     <div
       key={siege.name}
-      className="bg-gray-800/70 p-3 rounded-md hover:bg-gray-700/50 transition-colors"
+      className={`${
+        isComplete
+          ? "bg-gradient-to-br from-green-900/20 to-gray-900/50 border-green-900/30 hover:border-green-500/50"
+          : "bg-gradient-to-br from-amber-900/20 to-gray-900/50 border-amber-900/30 hover:border-amber-500/50"
+      } p-3 rounded-md border backdrop-blur-sm transition-all duration-300 shadow-lg hover:shadow-purple-900/20`}
     >
-      <div className="flex justify-between items-center mb-1">
+      <div className="flex justify-between items-center mb-2">
         <Image
           src={`/images/troop/${siege.name}.png`}
           alt={siege.name}
@@ -146,9 +168,7 @@ const SiegeCard = ({ siege }: { siege: Troop }) => {
         </span>
         <span
           className={`font-semibold ${
-            troopMaxLevelForTh && siege.level / siege.maxLevel === 1
-              ? "text-green-500"
-              : "text-purple-400"
+            isComplete ? "text-green-500" : "text-amber-400"
           }`}
         >
           Lvl {siege.level}/{troopMaxLevelForTh}

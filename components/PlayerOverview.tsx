@@ -9,7 +9,7 @@ const PlayerOverview = ({ playerData }: { playerData: Main }) => {
       </h2>
       <Image
         priority
-        src={`/images/townhall/Town_Hall${playerData.townHallLevel}${
+        src={`/images/resource/Townhall/Town_Hall${playerData.townHallLevel}${
           playerData.townHallWeaponLevel
             ? `L${playerData.townHallWeaponLevel}`
             : ""

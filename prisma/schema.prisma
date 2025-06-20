@@ -8,46 +8,48 @@ generator client {
 }
 
 model User {
-  id            String    @id @default(cuid())
-  name          String?
-  email         String    @unique
-  password      String
-  playerTag     String?   @unique
-  townHallLevel Int?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  buildings     Building[]
-  accounts      Account[]
-  sessions      Session[]
+  id              String            @id @default(cuid())
+  name            String?
+  email           String            @unique
+  password        String
+  playerTag       String?           @unique
+  townHallLevel   Int?
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  buildings       Building[]
+  accounts        Account[]
+  sessions        Session[]
+  BuildingUpgrade BuildingUpgrade[]
+  BuilderHut      BuilderHut[]
 }
 
 model Building {
-  id          String    @id @default(cuid())
-  name        String
-  level       Int       @default(1)
-  count       Int       @default(1)
-  isGeared    Boolean   @default(false)
-  category    String    @default("Other")
-  userId      String
-  user        User      @relation(fields: [userId], references: [id])
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id              String            @id @default(cuid())
+  name            String
+  level           Int               @default(1)
+  isGeared        Boolean           @default(false)
+  category        String            @default("other")
+  userId          String
+  user            User              @relation(fields: [userId], references: [id])
+  createdAt       DateTime          @default(now())
+  updatedAt       DateTime          @updatedAt
+  BuildingUpgrade BuildingUpgrade[]
 }
 
 model Account {
-  id                 String  @id @default(cuid())
-  userId             String
-  type               String
-  provider           String
-  providerAccountId  String
-  refresh_token      String?
-  access_token       String?
-  expires_at         Int?
-  token_type         String?
-  scope              String?
-  id_token           String?
-  session_state      String?
-  user               User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id                String  @id @default(cuid())
+  userId            String
+  type              String
+  provider          String
+  providerAccountId String
+  refresh_token     String?
+  access_token      String?
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String?
+  session_state     String?
+  user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@unique([provider, providerAccountId])
 }
@@ -58,4 +60,26 @@ model Session {
   userId       String
   expires      DateTime
   user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-} 
+}
+
+model BuilderHut {
+  id       String            @id @default(cuid())
+  userId   String
+  user     User              @relation(fields: [userId], references: [id])
+  level    Int
+  upgrades BuildingUpgrade[]
+}
+
+model BuildingUpgrade {
+  id         String      @id @default(cuid())
+  buildingId String
+  building   Building    @relation(fields: [buildingId], references: [id])
+  userId     String
+  user       User        @relation(fields: [userId], references: [id])
+  startTime  DateTime
+  endTime    DateTime
+  builderId  String? // Optional, assigned builder hut
+  builder    BuilderHut? @relation(fields: [builderId], references: [id])
+  createdAt  DateTime    @default(now())
+  updatedAt  DateTime    @updatedAt
+}

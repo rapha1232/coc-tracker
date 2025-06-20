@@ -6,9 +6,9 @@ const prisma = new PrismaClient();
 
 export async function POST(req: Request) {
   try {
-    const { name, email, password } = await req.json();
+    const { name, email, password, playerTag } = await req.json();
 
-    if (!name || !email || !password) {
+    if (!name || !email || !password || !playerTag) {
       return NextResponse.json(
         { error: "Missing required fields" },
         { status: 400 }
@@ -27,6 +27,18 @@ export async function POST(req: Request) {
       );
     }
 
+    // Check if player tag already exists
+    const existingTag = await prisma.user.findUnique({
+      where: { playerTag },
+    });
+
+    if (existingTag) {
+      return NextResponse.json(
+        { error: "Player tag already registered" },
+        { status: 400 }
+      );
+    }
+
     const hashedPassword = await hash(password, 10);
 
     const user = await prisma.user.create({
@@ -34,6 +46,7 @@ export async function POST(req: Request) {
         name,
         email,
         password: hashedPassword,
+        playerTag,
       },
     });
 
